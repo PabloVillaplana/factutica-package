@@ -1,0 +1,54 @@
+{
+    "name": "factutica/laravel-paquete-facturacion",
+    "description": "Laravel package for electronic invoicing (Facturación Electrónica) compliant with Costa Rica's Ministerio de Hacienda API.",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Juan Pablo Villaplana Corrales",
+            "email": "jpvillaplana@gmail.com",
+            "homepage": "https://github.com/PabloVillaplana",
+            "role": "Lead Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FactuTica\\FactuticaCR\\": "src/",
+            "FactuTica\\FactuticaCR\\Database\\": "database/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FactuTica\\FactuticaCR\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FactuTica\\FactuticaCR\\InvoicingServiceProvider"
+            ]
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/tests",
+            "/.github",
+            "phpunit.xml"
+        ]
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

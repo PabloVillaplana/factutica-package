@@ -1,0 +1,5 @@
+/vendor
+/.idea
+/.env
+*.p12
+/composer.lock

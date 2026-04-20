@@ -1,0 +1,1966 @@
+{
+  "info": {
+    "name": "Laravel Invoicing CR",
+    "description": "Colección completa para factutica/laravel-paquete-facturacion.\n\nIncluye happy paths, pruebas de validación, edge cases, y simulación de webhooks.\n\nClave, NumeroConsecutivo, FechaEmision y Emisor se generan automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://package-dev.test"
+    },
+    {
+      "key": "prefix",
+      "value": "invoicing-cr"
+    },
+    {
+      "key": "ui_key",
+      "value": ""
+    },
+    {
+      "key": "receipt_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Happy Path — Crear por tipo",
+      "description": "Un request por cada tipo de comprobante con datos válidos. Cada uno guarda ui_key y receipt_id para los siguientes requests.",
+      "item": [
+        {
+          "name": "FE — Factura Electrónica",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante FE', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('FE'));",
+                  "pm.test('Status sent', () => pm.expect(pm.response.json().data.estado_comprobante).to.eql('sent'));",
+                  "pm.test('Tiene clave de 50 chars', () => pm.expect(pm.response.json().data.clave).to.have.lengthOf(50));",
+                  "const data = pm.response.json().data;",
+                  "pm.collectionVariables.set('ui_key', data.clave);",
+                  "pm.collectionVariables.set('receipt_id', String(data.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"external_reference\": \"REF-001\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"PAMELA ZUÑIGA FALLAS\",\n    \"identificacion\": {\n      \"tipo\": \"01\",\n      \"numero\": \"115530312\"\n    },\n    \"correo_electronico\": [\n      \"villazuniga24@gmail.com\"\n    ]\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"6803000000000\",\n        \"cantidad\": \"2\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "TE — Tiquete Electrónico (sin identificación receptor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante TE', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('TE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"TE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Consumidor Final\"\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"6803000000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio técnico\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"650.00\"\n          }\n        ],\n        \"impuesto_neto\": \"650.00\",\n        \"monto_total_linea\": \"5650.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"650.00\",\n    \"total_comprobante\": \"5650.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5650.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "NC — Nota de Crédito (con referencia)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante NC', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('NC'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"NC\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"PAMELA ZUÑIGA FALLAS\",\n    \"identificacion\": {\n      \"tipo\": \"01\",\n      \"numero\": \"115530312\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"6803000000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Anulacion parcial - devolucion servicio\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"650.00\"\n          }\n        ],\n        \"impuesto_neto\": \"650.00\",\n        \"monto_total_linea\": \"5650.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"650.00\",\n    \"total_comprobante\": \"5650.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5650.00\"\n      }\n    ]\n  },\n  \"informacion_referencia\": [\n    {\n      \"tipo_doc_ir\": \"01\",\n      \"numero\": \"50601042600011275056000100001010000000003174220238\",\n      \"fecha_emision_ir\": \"2026-04-01T19:47:24-06:00\",\n      \"codigo\": \"01\",\n      \"razon\": \"Devolucion parcial de servicio\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "ND — Nota de Débito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante ND', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('ND'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"ND\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"PAMELA ZUÑIGA FALLAS\",\n    \"identificacion\": {\n      \"tipo\": \"01\",\n      \"numero\": \"115530312\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"6803000000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Cargo adicional por servicio urgente\",\n        \"precio_unitario\": \"2000.00\",\n        \"monto_total\": \"2000.00\",\n        \"sub_total\": \"2000.00\",\n        \"base_imponible\": \"2000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"260.00\"\n          }\n        ],\n        \"impuesto_neto\": \"260.00\",\n        \"monto_total_linea\": \"2260.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"2000.00\",\n    \"total_gravado\": \"2000.00\",\n    \"total_venta\": \"2000.00\",\n    \"total_venta_neta\": \"2000.00\",\n    \"total_impuesto\": \"260.00\",\n    \"total_comprobante\": \"2260.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"2260.00\"\n      }\n    ]\n  },\n  \"informacion_referencia\": [\n    {\n      \"tipo_doc_ir\": \"01\",\n      \"numero\": \"50601042600011275056000100001010000000003174220238\",\n      \"fecha_emision_ir\": \"2026-04-01T19:47:24-06:00\",\n      \"codigo\": \"02\",\n      \"razon\": \"Cargo adicional por servicio urgente\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "FEC — Factura de Compra (mercancía)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante FEC', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('FEC'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FEC\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_receptor\": \"6201.0\",\n  \"emisor\": {\n    \"nombre\": \"Proveedor Agrícola S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    },\n    \"ubicacion\": {\n      \"provincia\": \"1\",\n      \"canton\": \"01\",\n      \"distrito\": \"01\",\n      \"otras_senas\": \"San José Centro, frente al parque\"\n    },\n    \"correo_electronico\": [\n      \"proveedor@test.com\"\n    ]\n  },\n  \"receptor\": {\n    \"nombre\": \"Mi Empresa S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101123456\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"0111100000000\",\n        \"cantidad\": \"100\",\n        \"unidad_medida\": \"Kg\",\n        \"detalle\": \"Café oro primera calidad\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"50000.00\",\n        \"sub_total\": \"50000.00\",\n        \"base_imponible\": \"50000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"6500.00\"\n          }\n        ],\n        \"impuesto_neto\": \"6500.00\",\n        \"monto_total_linea\": \"56500.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"50000.00\",\n    \"total_gravado\": \"50000.00\",\n    \"total_venta\": \"50000.00\",\n    \"total_venta_neta\": \"50000.00\",\n    \"total_impuesto\": \"6500.00\",\n    \"total_comprobante\": \"56500.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"02\",\n        \"total_medio_pago\": \"56500.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "FEE — Factura de Exportación (USD)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Tiene tipo_comprobante FEE', () => pm.expect(pm.response.json().data.tipo_comprobante).to.eql('FEE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FEE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"International Corp LLC\",\n    \"identificacion\": {\n      \"tipo\": \"05\",\n      \"numero\": \"US-12345\"\n    },\n    \"otras_senas_extranjero\": \"123 Main Street, Miami FL 33101, USA\"\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"4621100000100\",\n        \"cantidad\": \"10\",\n        \"unidad_medida\": \"Kg\",\n        \"detalle\": \"Café exportación premium\",\n        \"precio_unitario\": \"100.00\",\n        \"monto_total\": \"1000.00\",\n        \"sub_total\": \"1000.00\",\n        \"base_imponible\": \"1000.00\",\n        \"monto_exportacion\": \"1000.00\",\n        \"monto_total_linea\": \"1000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"USD\",\n      \"tipo_cambio\": \"515.50\"\n    },\n    \"total_mercancias_exentas\": \"1000.00\",\n    \"total_exento\": \"1000.00\",\n    \"total_venta\": \"1000.00\",\n    \"total_venta_neta\": \"1000.00\",\n    \"total_comprobante\": \"1000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"03\",\n        \"total_medio_pago\": \"1000.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Validación — Errores esperados (422)",
+      "description": "Cada request debe fallar con 422. Verifica que los validadores detectan problemas antes de tocar la DB.",
+      "item": [
+        {
+          "name": "Tipo inválido → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Error en receipt_type', () => pm.expect(pm.response.json().errors).to.have.property('receipt_type'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"INVALIDO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cédula física inválida (10 dígitos) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Error en Numero', () => {",
+                  "  const errors = pm.response.json().errors;",
+                  "  const keys = Object.keys(errors);",
+                  "  pm.expect(keys.some(k => k.includes('Numero'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test\",\n    \"identificacion\": {\n      \"tipo\": \"01\",\n      \"numero\": \"1234567890\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Test\",\n        \"precio_unitario\": \"1000\",\n        \"monto_total\": \"1000\",\n        \"sub_total\": \"1000\",\n        \"base_imponible\": \"1000\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13\",\n            \"monto\": \"130\"\n          }\n        ],\n        \"impuesto_neto\": \"130\",\n        \"monto_total_linea\": \"1130\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"1000\",\n    \"total_gravado\": \"1000\",\n    \"total_venta\": \"1000\",\n    \"total_venta_neta\": \"1000\",\n    \"total_impuesto\": \"130\",\n    \"total_comprobante\": \"1130\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"1130\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "MontoTotal no cuadra (Cantidad × Precio) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensaje menciona MontoTotal', () => pm.expect(pm.response.json().message).to.include('MontoTotal'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"2\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"9999.00\",\n        \"sub_total\": \"9999.00\",\n        \"base_imponible\": \"9999.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13\",\n            \"monto\": \"1300\"\n          }\n        ],\n        \"impuesto_neto\": \"1300\",\n        \"monto_total_linea\": \"11299\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"9999\",\n    \"total_gravado\": \"9999\",\n    \"total_venta\": \"9999\",\n    \"total_venta_neta\": \"9999\",\n    \"total_impuesto\": \"1300\",\n    \"total_comprobante\": \"11299\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11299\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "TotalVenta no cuadra (gravado + exento) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensaje menciona TotalVenta', () => pm.expect(pm.response.json().message).to.include('TotalVenta'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio\",\n        \"precio_unitario\": \"5000\",\n        \"monto_total\": \"5000\",\n        \"sub_total\": \"5000\",\n        \"base_imponible\": \"5000\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13\",\n            \"monto\": \"650\"\n          }\n        ],\n        \"impuesto_neto\": \"650\",\n        \"monto_total_linea\": \"5650\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"5000\",\n    \"total_gravado\": \"5000\",\n    \"total_venta\": \"99999\",\n    \"total_venta_neta\": \"5000\",\n    \"total_impuesto\": \"650\",\n    \"total_comprobante\": \"5650\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5650\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Tarifa IVA no coincide con CodigoTarifaIVA → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Mensaje menciona Tarifa', () => pm.expect(pm.response.json().message).to.include('Tarifa'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio\",\n        \"precio_unitario\": \"1000\",\n        \"monto_total\": \"1000\",\n        \"sub_total\": \"1000\",\n        \"base_imponible\": \"1000\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"8.00\",\n            \"monto\": \"80\"\n          }\n        ],\n        \"impuesto_neto\": \"80\",\n        \"monto_total_linea\": \"1080\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"1000\",\n    \"total_gravado\": \"1000\",\n    \"total_venta\": \"1000\",\n    \"total_venta_neta\": \"1000\",\n    \"total_impuesto\": \"80\",\n    \"total_comprobante\": \"1080\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"1080\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "CondicionVenta inválida → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"ZZ\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Test\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Test\",\n        \"precio_unitario\": \"100\",\n        \"monto_total\": \"100\",\n        \"sub_total\": \"100\",\n        \"base_imponible\": \"100\",\n        \"monto_total_linea\": \"100\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_venta\": \"100\",\n    \"total_comprobante\": \"100\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "TipoCambio = 0 → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Error en TipoCambio', () => {",
+                  "  const errors = pm.response.json().errors;",
+                  "  const keys = Object.keys(errors);",
+                  "  pm.expect(keys.some(k => k.includes('TipoCambio'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Test\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Test\",\n        \"precio_unitario\": \"100\",\n        \"monto_total\": \"100\",\n        \"sub_total\": \"100\",\n        \"base_imponible\": \"100\",\n        \"monto_total_linea\": \"100\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"0\"\n    },\n    \"total_venta\": \"100\",\n    \"total_comprobante\": \"100\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "NC sin InformacionReferencia → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Error en InformacionReferencia', () => {",
+                  "  const errors = pm.response.json().errors;",
+                  "  pm.expect(errors).to.have.property('InformacionReferencia');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"NC\",\n  \"condicion_venta\": \"01\",\n  \"receptor\": {\n    \"nombre\": \"Test\"\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_venta\": \"100\",\n    \"total_comprobante\": \"100\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "taxes",
+          "description": "Pruebas de validateTaxAmount (Monto por código) y validateTariffConsistency (Tarifa vs CodigoTarifaIVA). Cada request provoca un 422 antes de tocar la DB.",
+          "item": [
+            {
+              "name": "validateTaxAmount — Código 01 IVA: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 01', () => pm.expect(pm.response.json().mensaje).to.include('código 01'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"500.00\"\n          }\n        ],\n        \"impuesto_neto\": \"500.00\",\n        \"monto_total_linea\": \"10500.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"500.00\",\n    \"total_comprobante\": \"10500.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10500.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 07 IVA Bienes Usados: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 07', () => pm.expect(pm.response.json().mensaje).to.include('código 07'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Bien usado en venta\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"4000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"07\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"100.00\"\n          }\n        ],\n        \"impuesto_neto\": \"100.00\",\n        \"monto_total_linea\": \"5100.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"100.00\",\n    \"total_comprobante\": \"5100.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5100.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 02 Selectivo de Consumo: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 02', () => pm.expect(pm.response.json().mensaje).to.include('código 02'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1121100000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Producto con impuesto selectivo\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10500.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"02\",\n            \"tarifa\": \"10.00\",\n            \"monto\": \"500.00\"\n          }\n        ],\n        \"impuesto_neto\": \"500.00\",\n        \"monto_total_linea\": \"10500.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"500.00\",\n    \"total_comprobante\": \"10500.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10500.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 03 Combustible: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 03', () => pm.expect(pm.response.json().mensaje).to.include('código 03'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1921100000000\",\n        \"cantidad\": \"100\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Gasolina súper\",\n        \"precio_unitario\": \"800.00\",\n        \"monto_total\": \"80000.00\",\n        \"sub_total\": \"80000.00\",\n        \"base_imponible\": \"80000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"03\",\n            \"monto\": \"999.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"100\",\n              \"impuesto_unidad\": \"50.00\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"999.00\",\n        \"monto_total_linea\": \"80999.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"80000.00\",\n    \"total_gravado\": \"80000.00\",\n    \"total_venta\": \"80000.00\",\n    \"total_venta_neta\": \"80000.00\",\n    \"total_impuesto\": \"999.00\",\n    \"total_comprobante\": \"80999.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"80999.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 04 Bebidas Alcohólicas: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 04', () => pm.expect(pm.response.json().mensaje).to.include('código 04'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Alcohólica S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1101100000000\",\n        \"cantidad\": \"10\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Licor importado\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5100.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"04\",\n            \"monto\": \"100.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"1\",\n              \"proporcion\": \"0.75\",\n              \"impuesto_unidad\": \"100.00\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"100.00\",\n        \"monto_total_linea\": \"5100.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"100.00\",\n    \"total_comprobante\": \"5100.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5100.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 05 Bebidas sin Alcohol: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 05', () => pm.expect(pm.response.json().mensaje).to.include('código 05'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Bebidas S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1102100000000\",\n        \"cantidad\": \"24\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Bebida sin alcohol 355ml\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"12000.00\",\n        \"sub_total\": \"12000.00\",\n        \"base_imponible\": \"12050.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"05\",\n            \"monto\": \"50.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"0.355\",\n              \"impuesto_unidad\": \"32.00\",\n              \"volumen_unidad_consumo\": \"1\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"50.00\",\n        \"monto_total_linea\": \"12050.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"12000.00\",\n    \"total_gravado\": \"12000.00\",\n    \"total_venta\": \"12000.00\",\n    \"total_venta_neta\": \"12000.00\",\n    \"total_impuesto\": \"50.00\",\n    \"total_comprobante\": \"12050.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"12050.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "calcBebidas — VolumenUnidadConsumo=0: función retorna 0 pero Monto!=0 → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 05', () => pm.expect(pm.response.json().mensaje).to.include('código 05'));",
+                      "// VolumenUnidadConsumo=0 activa el branch :0 de calcBebidas, expected=0. Monto=300 != 0 → falla."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Bebidas S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1102100000000\",\n        \"cantidad\": \"24\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Bebida sin alcohol 355ml\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"12000.00\",\n        \"sub_total\": \"12000.00\",\n        \"base_imponible\": \"12300.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"05\",\n            \"monto\": \"300.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"0.355\",\n              \"impuesto_unidad\": \"32.00\",\n              \"volumen_unidad_consumo\": \"0\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"300.00\",\n        \"monto_total_linea\": \"12300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"12000.00\",\n    \"total_gravado\": \"12000.00\",\n    \"total_venta\": \"12000.00\",\n    \"total_venta_neta\": \"12000.00\",\n    \"total_impuesto\": \"300.00\",\n    \"total_comprobante\": \"12300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"12300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "calcBebidas — Monto sin dividir por VolumenUnidadConsumo → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 05', () => pm.expect(pm.response.json().mensaje).to.include('código 05'));",
+                      "// Error clásico: Monto = Cant(12) × UM(1.5) × ImpUnit(40) = 720, omitiendo /Volumen(2).",
+                      "// Correcto: 12 × 1.5 × (40/2) = 360. El validador detecta la diferencia."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Bebidas S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1102100000000\",\n        \"cantidad\": \"12\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Agua mineral 1.5L\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"6000.00\",\n        \"sub_total\": \"6000.00\",\n        \"base_imponible\": \"6720.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"05\",\n            \"monto\": \"720.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"1.5\",\n              \"impuesto_unidad\": \"40.00\",\n              \"volumen_unidad_consumo\": \"2\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"720.00\",\n        \"monto_total_linea\": \"6720.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"6000.00\",\n    \"total_gravado\": \"6000.00\",\n    \"total_venta\": \"6000.00\",\n    \"total_venta_neta\": \"6000.00\",\n    \"total_impuesto\": \"720.00\",\n    \"total_comprobante\": \"6720.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"6720.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 06 Tabaco: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 06', () => pm.expect(pm.response.json().mensaje).to.include('código 06'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Tabaco S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1200100000000\",\n        \"cantidad\": \"10\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Cigarrillos cajetilla\",\n        \"precio_unitario\": \"200.00\",\n        \"monto_total\": \"2000.00\",\n        \"sub_total\": \"2000.00\",\n        \"base_imponible\": \"2000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"06\",\n            \"monto\": \"100.00\",\n            \"datos_impuesto_especifico\": {\n              \"cantidad_unidad_medida\": \"20\",\n              \"impuesto_unidad\": \"3.50\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"100.00\",\n        \"monto_total_linea\": \"2100.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"2000.00\",\n    \"total_gravado\": \"2000.00\",\n    \"total_venta\": \"2000.00\",\n    \"total_venta_neta\": \"2000.00\",\n    \"total_impuesto\": \"100.00\",\n    \"total_comprobante\": \"2100.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"2100.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 08 IVA Bienes Inmuebles: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 08', () => pm.expect(pm.response.json().mensaje).to.include('código 08'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Constructora Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"3744100000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Venta de bien inmueble\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"08\",\n            \"tarifa\": \"15.00\",\n            \"factor_calculo_iva\": \"1\",\n            \"monto\": \"100.00\"\n          }\n        ],\n        \"impuesto_neto\": \"100.00\",\n        \"monto_total_linea\": \"10100.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"100.00\",\n    \"total_comprobante\": \"10100.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10100.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTaxAmount — Código 12 Impuesto Cemento: Monto incorrecto → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 12', () => pm.expect(pm.response.json().mensaje).to.include('código 12'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Ferrería Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"3744100000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Venta de cemento\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10099.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"12\",\n            \"tarifa\": \"5.00\",\n            \"monto\": \"99.00\"\n          }\n        ],\n        \"impuesto_neto\": \"99.00\",\n        \"monto_total_linea\": \"10099.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"99.00\",\n    \"total_comprobante\": \"10099.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10099.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 01 (0%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 01', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (01)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"01\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 02 (1%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 02', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (02)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"02\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 03 (2%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 03', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (03)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"03\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 04 (4%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 04', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (04)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"04\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 05 (0%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 05', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (05)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"05\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 06 (4%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 06', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (06)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"06\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 07 (8%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 07', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (07)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"07\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 08 (13%): Tarifa 8 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 08', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (08)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"8.00\",\n            \"monto\": \"800.00\"\n          }\n        ],\n        \"impuesto_neto\": \"800.00\",\n        \"monto_total_linea\": \"10800.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"800.00\",\n    \"total_comprobante\": \"10800.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10800.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 09 (0.5%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 09', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (09)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"09\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 10 (0%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 10', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (10)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"10\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateTariffConsistency — CodigoTarifaIVA 11 (0%): Tarifa 13 incorrecta → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona CodigoTarifaIVA 11', () => pm.expect(pm.response.json().mensaje).to.include('CodigoTarifaIVA (11)'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio de consultoría\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"11\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"11300.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11300.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateExoneracion — TarifaExonerada(5) > Tarifa(4) en CodigoTarifaIVA 04 → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona TarifaExonerada', () => pm.expect(pm.response.json().mensaje).to.include('TarifaExonerada'));",
+                      "// CodigoTarifaIVA=04 → Tarifa=4%. TarifaExonerada=5 > 4 → no puede exceder la tarifa del impuesto."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio con exoneración parcial\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"04\",\n            \"tarifa\": \"4.00\",\n            \"monto\": \"400.00\",\n            \"exoneracion\": {\n              \"tipo_documento_ex1\": \"01\",\n              \"numero_documento\": \"EXO-2024-001\",\n              \"nombre_institucion\": \"Ministerio de Hacienda\",\n              \"fecha_emision_ex\": \"2024-01-01\",\n              \"tarifa_exonerada\": \"5.00\",\n              \"monto_exoneracion\": \"500.00\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"-100.00\",\n        \"monto_total_linea\": \"9900.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"400.00\",\n    \"total_comprobante\": \"9900.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"9900.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateExoneracion — TarifaExonerada(1) > Tarifa(0) en CodigoTarifaIVA 11 → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona TarifaExonerada', () => pm.expect(pm.response.json().mensaje).to.include('TarifaExonerada'));",
+                      "// CodigoTarifaIVA=11 → Tarifa=0%. TarifaExonerada=1 > 0 → inválido para tarifa 11."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio tarifa cero con exoneración\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"11\",\n            \"tarifa\": \"0.00\",\n            \"monto\": \"0.00\",\n            \"exoneracion\": {\n              \"tipo_documento_ex1\": \"02\",\n              \"numero_documento\": \"EXO-2024-002\",\n              \"nombre_institucion\": \"Ministerio de Salud\",\n              \"fecha_emision_ex\": \"2024-01-01\",\n              \"tarifa_exonerada\": \"1.00\",\n              \"monto_exoneracion\": \"100.00\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"-100.00\",\n        \"monto_total_linea\": \"9900.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"0.00\",\n    \"total_comprobante\": \"9900.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"9900.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateExoneracion — MontoExoneracion(999) ≠ TarifaExonerada(5%)×Base(10000)=500 → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona MontoExoneracion', () => pm.expect(pm.response.json().mensaje).to.include('MontoExoneracion'));",
+                      "// Monto correcto y Tarifa consistente (pasan las 2 validaciones previas).",
+                      "// TarifaExonerada=5% sobre Base=10000 debería dar 500, se envía 999."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio con exoneración incorrecta\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\",\n            \"exoneracion\": {\n              \"tipo_documento_ex1\": \"01\",\n              \"numero_documento\": \"EXO-2024-003\",\n              \"nombre_institucion\": \"Ministerio de Hacienda\",\n              \"fecha_emision_ex\": \"2024-01-01\",\n              \"tarifa_exonerada\": \"5.00\",\n              \"monto_exoneracion\": \"999.00\"\n            }\n          }\n        ],\n        \"impuesto_neto\": \"301.00\",\n        \"monto_total_linea\": \"10301.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1300.00\",\n    \"total_comprobante\": \"10301.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10301.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateDatosEspecificos — Código 03 sin DatosImpuestoEspecifico → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 03', () => pm.expect(pm.response.json().mensaje).to.include('código 03'));",
+                      "// Monto=0 pasa validateTaxAmount (CantUM*ImpUnit defaults a 0*0=0).",
+                      "// validateDatosEspecificos detecta que DatosImpuestoEspecifico es null para código 03."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Cliente Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1921100000000\",\n        \"cantidad\": \"100\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Combustible sin datos específicos\",\n        \"precio_unitario\": \"50.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"03\",\n            \"monto\": \"0.00\"\n          }\n        ],\n        \"impuesto_neto\": \"0.00\",\n        \"monto_total_linea\": \"5000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"0.00\",\n    \"total_comprobante\": \"5000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5000.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateDatosEspecificos — Código 04 sin DatosImpuestoEspecifico → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 04', () => pm.expect(pm.response.json().mensaje).to.include('código 04'));",
+                      "// Monto=0 pasa validateTaxAmount (Cant*Proporcion*ImpUnit defaults a 0).",
+                      "// validateDatosEspecificos detecta que DatosImpuestoEspecifico es null para código 04."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Alcohólica S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1101100000000\",\n        \"cantidad\": \"10\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Licor sin datos específicos\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"04\",\n            \"monto\": \"0.00\"\n          }\n        ],\n        \"impuesto_neto\": \"0.00\",\n        \"monto_total_linea\": \"5000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"5000.00\",\n    \"total_gravado\": \"5000.00\",\n    \"total_venta\": \"5000.00\",\n    \"total_venta_neta\": \"5000.00\",\n    \"total_impuesto\": \"0.00\",\n    \"total_comprobante\": \"5000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"5000.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateDatosEspecificos — Código 05 sin DatosImpuestoEspecifico → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 05', () => pm.expect(pm.response.json().mensaje).to.include('código 05'));",
+                      "// Monto=0 pasa validateTaxAmount (calcBebidas con datos vacíos retorna 0).",
+                      "// validateDatosEspecificos detecta que DatosImpuestoEspecifico es null para código 05."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Bebidas S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1102100000000\",\n        \"cantidad\": \"24\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Bebida sin alcohol sin datos específicos\",\n        \"precio_unitario\": \"500.00\",\n        \"monto_total\": \"12000.00\",\n        \"sub_total\": \"12000.00\",\n        \"base_imponible\": \"12000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"05\",\n            \"monto\": \"0.00\"\n          }\n        ],\n        \"impuesto_neto\": \"0.00\",\n        \"monto_total_linea\": \"12000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"12000.00\",\n    \"total_gravado\": \"12000.00\",\n    \"total_venta\": \"12000.00\",\n    \"total_venta_neta\": \"12000.00\",\n    \"total_impuesto\": \"0.00\",\n    \"total_comprobante\": \"12000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"12000.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateDatosEspecificos — Código 06 sin DatosImpuestoEspecifico → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona código 06', () => pm.expect(pm.response.json().mensaje).to.include('código 06'));",
+                      "// Monto=0 pasa validateTaxAmount (Cant*CantUM*ImpUnit defaults a 0).",
+                      "// validateDatosEspecificos detecta que DatosImpuestoEspecifico es null para código 06."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Distribuidora Tabaco S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"1200100000000\",\n        \"cantidad\": \"10\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Cigarrillos sin datos específicos\",\n        \"precio_unitario\": \"200.00\",\n        \"monto_total\": \"2000.00\",\n        \"sub_total\": \"2000.00\",\n        \"base_imponible\": \"2000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"06\",\n            \"monto\": \"0.00\"\n          }\n        ],\n        \"impuesto_neto\": \"0.00\",\n        \"monto_total_linea\": \"2000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"2000.00\",\n    \"total_gravado\": \"2000.00\",\n    \"total_venta\": \"2000.00\",\n    \"total_venta_neta\": \"2000.00\",\n    \"total_impuesto\": \"0.00\",\n    \"total_comprobante\": \"2000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"2000.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "validateDatosEspecificos — Código 12 Tarifa 10 en lugar de 5 → 422",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                      "pm.test('Mensaje menciona Tarifa para código 12', () => pm.expect(pm.response.json().mensaje).to.include('código 12'));",
+                      "// Monto=1000 pasa validateTaxAmount (SubTotal×10%=1000).",
+                      "// validateDatosEspecificos lanza error porque Tarifa debe ser 5 para código 12."
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": "{{base_url}}/{{prefix}}/receipts",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Ferrería Test S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"3744100000000\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Venta de cemento tarifa incorrecta\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"11000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"12\",\n            \"tarifa\": \"10.00\",\n            \"monto\": \"1000.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1000.00\",\n        \"monto_total_linea\": \"11000.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_mercancias_gravadas\": \"10000.00\",\n    \"total_gravado\": \"10000.00\",\n    \"total_venta\": \"10000.00\",\n    \"total_venta_neta\": \"10000.00\",\n    \"total_impuesto\": \"1000.00\",\n    \"total_comprobante\": \"11000.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"11000.00\"\n      }\n    ]\n  }\n}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Edge Cases",
+      "description": "Casos especiales: múltiples líneas, descuentos, múltiples medios de pago, 5 decimales.",
+      "item": [
+        {
+          "name": "FE — Múltiples líneas (servicio + mercancía)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Multi Línea S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"1\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Consultoría (servicio)\",\n        \"precio_unitario\": \"10000.00\",\n        \"monto_total\": \"10000.00\",\n        \"sub_total\": \"10000.00\",\n        \"base_imponible\": \"10000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1300.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1300.00\",\n        \"monto_total_linea\": \"11300.00\"\n      },\n      {\n        \"numero_linea\": 2,\n        \"codigo_cabys\": \"2620100000000\",\n        \"cantidad\": \"5\",\n        \"unidad_medida\": \"Unid\",\n        \"detalle\": \"Licencias software (mercancía)\",\n        \"precio_unitario\": \"1000.00\",\n        \"monto_total\": \"5000.00\",\n        \"sub_total\": \"5000.00\",\n        \"base_imponible\": \"5000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"650.00\"\n          }\n        ],\n        \"impuesto_neto\": \"650.00\",\n        \"monto_total_linea\": \"5650.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"10000.00\",\n    \"total_mercancias_gravadas\": \"5000.00\",\n    \"total_gravado\": \"15000.00\",\n    \"total_venta\": \"15000.00\",\n    \"total_venta_neta\": \"15000.00\",\n    \"total_impuesto\": \"1950.00\",\n    \"total_comprobante\": \"16950.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"16950.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "FE — Con descuento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"receptor\": {\n    \"nombre\": \"Con Descuento S.A.\",\n    \"identificacion\": {\n      \"tipo\": \"02\",\n      \"numero\": \"3101654321\"\n    }\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"8410101000100\",\n        \"cantidad\": \"2\",\n        \"unidad_medida\": \"Sp\",\n        \"detalle\": \"Servicio con descuento\",\n        \"precio_unitario\": \"5000.00\",\n        \"monto_total\": \"10000.00\",\n        \"descuento\": [\n          {\n            \"monto_descuento\": \"1000.00\",\n            \"codigo_descuento\": \"04\"\n          }\n        ],\n        \"sub_total\": \"9000.00\",\n        \"base_imponible\": \"9000.00\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"1170.00\"\n          }\n        ],\n        \"impuesto_neto\": \"1170.00\",\n        \"monto_total_linea\": \"10170.00\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"9000.00\",\n    \"total_gravado\": \"9000.00\",\n    \"total_venta\": \"9000.00\",\n    \"total_descuentos\": \"1000.00\",\n    \"total_venta_neta\": \"9000.00\",\n    \"total_impuesto\": \"1170.00\",\n    \"total_comprobante\": \"10170.00\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"10170.00\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "FE — Estilo GV Express (5 decimales, CodigoComercial)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Consecutive 20 chars', () => pm.expect(pm.response.json().data.numero_consecutivo).to.have.lengthOf(20));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/receipts",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"condicion_venta\": \"01\",\n  \"codigo_actividad_emisor\": \"6201.0\",\n  \"codigo_actividad_receptor\": \"4759.0\",\n  \"receptor\": {\n    \"nombre\": \"PAMELA ZUÑIGA FALLAS\",\n    \"identificacion\": {\n      \"tipo\": \"01\",\n      \"numero\": \"115530312\"\n    },\n    \"ubicacion\": {\n      \"provincia\": \"1\",\n      \"canton\": \"09\",\n      \"distrito\": \"01\",\n      \"otras_senas\": \"Calle Chinchas 75 metros al sur de expoceramica\"\n    },\n    \"telefono\": {\n      \"codigo_pais\": \"506\",\n      \"num_telefono\": \"87997912\"\n    },\n    \"correo_electronico\": [\n      \"villazuniga24@gmail.com\"\n    ]\n  },\n  \"detalle_servicio\": {\n    \"linea_detalle\": [\n      {\n        \"numero_linea\": 1,\n        \"codigo_cabys\": \"6803000000000\",\n        \"codigo_comercial\": [\n          {\n            \"tipo\": \"04\",\n            \"codigo\": \"0271\"\n          }\n        ],\n        \"cantidad\": \"2.000\",\n        \"unidad_medida\": \"Otros\",\n        \"detalle\": \"Caminadora plegable\",\n        \"precio_unitario\": \"135429.64602\",\n        \"monto_total\": \"270859.29204\",\n        \"sub_total\": \"270859.29204\",\n        \"base_imponible\": \"270859.29204\",\n        \"impuesto\": [\n          {\n            \"codigo\": \"01\",\n            \"codigo_tarifa_iva\": \"08\",\n            \"tarifa\": \"13.00\",\n            \"monto\": \"35211.70797\"\n          }\n        ],\n        \"impuesto_neto\": \"35211.70797\",\n        \"monto_total_linea\": \"306071.00001\"\n      }\n    ]\n  },\n  \"resumen_factura\": {\n    \"codigo_tipo_moneda\": {\n      \"codigo_moneda\": \"CRC\",\n      \"tipo_cambio\": \"1\"\n    },\n    \"total_serv_gravados\": \"270859.29204\",\n    \"total_gravado\": \"270859.29204\",\n    \"total_venta\": \"270859.29204\",\n    \"total_venta_neta\": \"270859.29204\",\n    \"total_impuesto\": \"35211.70797\",\n    \"total_comprobante\": \"306071.00001\",\n    \"medio_pago\": [\n      {\n        \"tipo_medio_pago\": \"01\",\n        \"total_medio_pago\": \"306071.00001\"\n      }\n    ]\n  },\n  \"otros\": {\n    \"otro_texto\": [\n      \"Generado por laravel-paquete-facturacion\"\n    ]\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Consultas",
+      "item": [
+        {
+          "name": "List Receipts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('Tiene meta', () => pm.expect(pm.response.json().meta).to.have.property('total'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{prefix}}/receipts?per_page=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "{{prefix}}",
+                "receipts"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "10"
+                },
+                {
+                  "key": "type",
+                  "value": "FE",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "sent",
+                  "disabled": true
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Receipt by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene data.id', () => pm.expect(pm.response.json().data).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/{{prefix}}/receipts/{{receipt_id}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Receipt by UI Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('clave coincide', () => pm.expect(pm.response.json().data.clave).to.eql(pm.collectionVariables.get('ui_key')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/{{prefix}}/receipts/key/{{ui_key}}",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Receipt Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const status = pm.response.code;",
+                  "pm.test('Status 200 o 502', () => pm.expect([200, 502]).to.include(status));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/{{prefix}}/receipts/key/{{ui_key}}/status",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Receipt inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/{{prefix}}/receipts/99999",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Recepción (MensajeReceptor)",
+      "item": [
+        {
+          "name": "Aceptar documento (CA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "pm.test('Status pending', () => pm.expect(pm.response.json().data.receipt_status).to.eql('pending'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/reception",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"50601032600310112345600100001010000000001199999999\",\n  \"receipt_type\": \"FE\",\n  \"consecutive_number\": \"00100001010000000001\",\n  \"emission_date\": \"2026-03-30T10:00:00-06:00\",\n  \"reception_status\": \"accepted\",\n  \"reception_message\": \"Documento aceptado\",\n  \"economic_activity_code\": \"6201.0\",\n  \"total_expense\": 10000,\n  \"issuer_name\": \"Proveedor Test S.A.\",\n  \"issuer_number\": \"3102654321\",\n  \"issuer_identification_type\": \"02\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Aceptar parcialmente (CAP)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/reception",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"50601032600310112345600100001010000000001199999999\",\n  \"receipt_type\": \"FE\",\n  \"consecutive_number\": \"00100001010000000001\",\n  \"emission_date\": \"2026-03-30T10:00:00-06:00\",\n  \"reception_status\": \"partially_accepted\",\n  \"reception_message\": \"Pendiente verificar línea 3\",\n  \"total_expense\": 10000,\n  \"issuer_name\": \"Proveedor Test S.A.\",\n  \"issuer_number\": \"3102654321\",\n  \"issuer_identification_type\": \"02\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Rechazar documento (CR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/reception",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"50601032600310112345600100001010000000001199999999\",\n  \"receipt_type\": \"FE\",\n  \"consecutive_number\": \"00100001010000000001\",\n  \"emission_date\": \"2026-03-30T10:00:00-06:00\",\n  \"reception_status\": \"rejected\",\n  \"reception_message\": \"Datos del emisor incorrectos\",\n  \"total_expense\": 10000,\n  \"issuer_name\": \"Proveedor Test S.A.\",\n  \"issuer_number\": \"3102654321\",\n  \"issuer_identification_type\": \"02\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Recepción sin clave → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Error en clave', () => pm.expect(pm.response.json().errors).to.have.property('clave'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/reception",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receipt_type\": \"FE\",\n  \"consecutive_number\": \"00100001010000000001\",\n  \"emission_date\": \"2026-03-30\",\n  \"reception_status\": \"accepted\",\n  \"total_expense\": 10000,\n  \"issuer_name\": \"Test\",\n  \"issuer_number\": \"3102654321\",\n  \"issuer_identification_type\": \"02\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Webhook (Hacienda)",
+      "item": [
+        {
+          "name": "Webhook — Aceptado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const status = pm.response.code;",
+                  "pm.test('Status 200 o 404', () => pm.expect([200, 404]).to.include(status));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/webhook",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"{{ui_key}}\",\n  \"ind-estado\": \"aceptado\",\n  \"fecha\": \"2026-03-31T12:00:00-06:00\",\n  \"respuesta-xml\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Webhook — Rechazado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const status = pm.response.code;",
+                  "pm.test('Status 200 o 404', () => pm.expect([200, 404]).to.include(status));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/webhook",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"{{ui_key}}\",\n  \"ind-estado\": \"rechazado\",\n  \"fecha\": \"2026-03-31T12:00:00-06:00\",\n  \"respuesta-xml\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Webhook — Clave inválida → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/{{prefix}}/webhook",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"clave-corta\",\n  \"ind-estado\": \"aceptado\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
