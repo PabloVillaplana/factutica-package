@@ -27,6 +27,15 @@ class CertificateLoaderService
     private bool $loaded = false;
 
     /**
+     * Resetea el estado en memoria para forzar la recarga del certificado.
+     * Usar cuando se cambia de empresa activa en el mismo proceso (ej. queue workers).
+     */
+    public function reset(): void
+    {
+        $this->loaded = false;
+    }
+
+    /**
      * Carga el certificado .p12 desde la configuración.
      *
      * @throws CertificateException

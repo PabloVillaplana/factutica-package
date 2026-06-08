@@ -134,6 +134,15 @@ class HaciendaIdpService
         Cache::forget($this->getCacheKey());
     }
 
+    /**
+     * Resetea solo el estado en memoria sin tocar la cache.
+     * Usar cuando se cambia de empresa activa en el mismo proceso (ej. queue workers).
+     */
+    public function reset(): void
+    {
+        $this->tokenData = null;
+    }
+
     private function getEndpoint(): string
     {
         $ambiente = config('invoicing-cr.invoicing.ambiente', 'sandbox');

@@ -161,4 +161,20 @@ return [
 
     'validate_cabys' => env('INVOICING_CR_VALIDATE_CABYS', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Empresa activa (multi-tenant)
+    |--------------------------------------------------------------------------
+    |
+    | ID de la empresa activa en contextos multi-tenant. Cuando está seteado,
+    | el paquete lo incluye en las queries de consecutivos para aislar las
+    | secuencias de numeración por empresa.
+    |
+    | No configurar en .env — la app host lo sobreescribe en runtime mediante
+    | InvoicingContext::configureFor($company) antes de cada operación.
+    |
+    */
+
+    'active_company_id' => null,
+
 ];

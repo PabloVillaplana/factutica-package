@@ -99,10 +99,17 @@ class ReceiptBuilderService
     private function getNextConsecutive(ReceiptType $type, int $establishment, int $terminal): int
     {
         return DB::transaction(function () use ($type, $establishment, $terminal) {
-            $record = ReceiptConsecutive::lockForUpdate()->firstOrCreate(
-                ['receipt_type' => $type, 'establishment' => $establishment, 'terminal' => $terminal],
-                ['last_number' => 0]
-            );
+            $filters = [
+                'receipt_type'  => $type,
+                'establishment' => $establishment,
+                'terminal'      => $terminal,
+            ];
+
+            if ($companyId = config('invoicing-cr.invoicing.active_company_id')) {
+                $filters['company_id'] = $companyId;
+            }
+
+            $record = ReceiptConsecutive::lockForUpdate()->firstOrCreate($filters, ['last_number' => 0]);
 
             $record->increment('last_number');
             $record->refresh();
