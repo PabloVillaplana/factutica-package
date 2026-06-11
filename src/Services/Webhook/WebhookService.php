@@ -3,8 +3,6 @@
 namespace FactuTica\FactuticaCR\Services\Webhook;
 
 use DOMDocument;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use FactuTica\FactuticaCR\Enums\HaciendaStatus;
 use FactuTica\FactuticaCR\Enums\ReceiptStatus;
 use FactuTica\FactuticaCR\Events\ReceiptAccepted;
@@ -12,6 +10,8 @@ use FactuTica\FactuticaCR\Events\ReceiptRejected;
 use FactuTica\FactuticaCR\Exceptions\HaciendaException;
 use FactuTica\FactuticaCR\Models\HaciendaResponse;
 use FactuTica\FactuticaCR\Models\Receipt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class WebhookService
 {
@@ -45,7 +45,7 @@ class WebhookService
         if (! $verification['valid']) {
             Log::warning('WebhookService: verificación fallida', [
                 'receipt_id' => $receipt->id,
-                'reason'     => $verification['reason'],
+                'reason' => $verification['reason'],
             ]);
 
             throw new HaciendaException("Webhook rechazado: {$verification['reason']}");
@@ -55,14 +55,14 @@ class WebhookService
         if ($receipt->hacienda_status !== HaciendaStatus::Pending) {
             Log::info('WebhookService: webhook duplicado ignorado', [
                 'receipt_id' => $receipt->id,
-                'ui_key'     => $receipt->ui_key,
-                'status'     => $receipt->hacienda_status->value,
+                'ui_key' => $receipt->ui_key,
+                'status' => $receipt->hacienda_status->value,
             ]);
 
             return [
                 'receipt_id' => $receipt->id,
-                'ui_key'     => $receipt->ui_key,
-                'status'     => $receipt->hacienda_status->value,
+                'ui_key' => $receipt->ui_key,
+                'status' => $receipt->hacienda_status->value,
             ];
         }
 
@@ -73,17 +73,17 @@ class WebhookService
             HaciendaResponse::updateOrCreate(
                 ['receipt_id' => $receipt->id],
                 [
-                    'receipt_key'               => $receipt->ui_key,
-                    'hacienda_status'           => $status,
-                    'response_xml'     => $respuestaXml,
+                    'receipt_key' => $receipt->ui_key,
+                    'hacienda_status' => $status,
+                    'response_xml' => $respuestaXml,
                     'response_message' => $message,
-                    'responded_at'     => $fecha,
+                    'responded_at' => $fecha,
                 ],
             );
 
             $receipt->update([
                 'hacienda_status' => $status,
-                'receipt_status'  => $status === HaciendaStatus::Accepted
+                'receipt_status' => $status === HaciendaStatus::Accepted
                     ? ReceiptStatus::Accepted
                     : ReceiptStatus::Rejected,
             ]);
@@ -100,23 +100,23 @@ class WebhookService
 
         Log::info('WebhookService: respuesta procesada', [
             'receipt_id' => $receipt->id,
-            'ui_key'     => $receipt->ui_key,
-            'status'     => $status->value,
+            'ui_key' => $receipt->ui_key,
+            'status' => $status->value,
         ]);
 
         return [
             'receipt_id' => $receipt->id,
-            'ui_key'     => $receipt->ui_key,
-            'status'     => $status->value,
+            'ui_key' => $receipt->ui_key,
+            'status' => $status->value,
         ];
     }
 
     private function mapStatus(?string $status): HaciendaStatus
     {
         return match (strtolower($status ?? '')) {
-            'aceptado'  => HaciendaStatus::Accepted,
+            'aceptado' => HaciendaStatus::Accepted,
             'rechazado' => HaciendaStatus::Rejected,
-            default     => HaciendaStatus::Pending,
+            default => HaciendaStatus::Pending,
         };
     }
 
@@ -132,7 +132,7 @@ class WebhookService
             return null;
         }
 
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
 
         if (! @$doc->loadXML($xml)) {
             return null;
@@ -140,6 +140,52 @@ class WebhookService
 
         $nodes = $doc->getElementsByTagName('DetalleMensaje');
 
-        return $nodes->length > 0 ? $nodes->item(0)->nodeValue : null;
+        if ($nodes->length === 0) {
+            return null;
+        }
+
+        $detalleMensaje = $nodes->item(0)->nodeValue;
+
+        return $detalleMensaje !== '' ? $this->cleanDetalleMensaje($detalleMensaje) : null;
+    }
+
+    /**
+     * Limpia el DetalleMensaje de Hacienda, que suele venir como un texto
+     * introductorio seguido de un bloque CSV con código y mensaje por línea.
+     * Convierte ese bloque en una lista legible de mensajes.
+     */
+    private function cleanDetalleMensaje(string $raw): string
+    {
+        if (preg_match('/^(.*?)\[\s*\n\s*codigo[^\n]*\n([\s\S]*?)\]/ms', $raw, $parts)) {
+            $intro = trim($parts[1]);
+            $csvBlock = $parts[2];
+        } elseif (preg_match('/^(.*?)codigo[^\n]*\n([\s\S]+)$/ms', $raw, $parts)) {
+            $intro = trim($parts[1]);
+            $csvBlock = $parts[2];
+        } else {
+            return trim($raw);
+        }
+
+        $messages = [];
+
+        foreach (explode("\n", $csvBlock) as $line) {
+            $line = trim($line);
+
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match_all('/""(.+?)""/s', $line, $m) && $m[1] !== []) {
+                $messages[] = '- '.trim(end($m[1]));
+            }
+        }
+
+        if ($messages === []) {
+            return trim($raw);
+        }
+
+        $list = "Mensajes:\n".implode("\n", $messages);
+
+        return $intro !== '' ? $intro."\n\n".$list : $list;
     }
 }
