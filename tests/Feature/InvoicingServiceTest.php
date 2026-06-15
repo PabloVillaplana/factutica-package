@@ -153,6 +153,47 @@ it('stores payload with receipt', function () {
     expect($payload->payload['ResumenFactura']['TotalVenta'])->toBe('10000.00');
 });
 
+it('auto-generates TotalDesgloseImpuesto net of exoneration', function () {
+    $service = app(InvoicingService::class);
+
+    $data = validReceiptData([
+        'DetalleServicio' => [
+            'LineaDetalle' => [[
+                'NumeroLinea' => '1', 'CodigoCABYS' => '8410101000100',
+                'Cantidad' => '1', 'UnidadMedida' => 'Sp',
+                'Detalle' => 'Servicio exonerado', 'PrecioUnitario' => '10000.00',
+                'MontoTotal' => '10000.00', 'SubTotal' => '10000.00',
+                'BaseImponible' => '10000.00',
+                'Impuesto' => [[
+                    'Codigo' => '01', 'CodigoTarifaIVA' => '08', 'Tarifa' => '13.00', 'Monto' => '1300.00',
+                    'Exoneracion' => [
+                        'TipoDocumentoEX1' => '01', 'NumeroDocumento' => '1111111',
+                        'NombreInstitucion' => '01', 'FechaEmisionEX' => now()->toIso8601String(),
+                        'TarifaExonerada' => '13.00', 'MontoExoneracion' => '1300.00',
+                    ],
+                ]],
+                'ImpuestoNeto' => '0.00', 'MontoTotalLinea' => '10000.00',
+            ]],
+        ],
+        'ResumenFactura' => [
+            'CodigoTipoMoneda' => ['CodigoMoneda' => 'CRC', 'TipoCambio' => '1'],
+            'TotalServExonerado' => '10000.00', 'TotalExonerado' => '10000.00',
+            'TotalVenta' => '10000.00', 'TotalVentaNeta' => '10000.00',
+            'TotalImpuesto' => '0.00', 'TotalComprobante' => '10000.00',
+            'MedioPago' => [['TipoMedioPago' => '01', 'TotalMedioPago' => '10000.00']],
+        ],
+    ]);
+
+    $result = $service->createAndSend('FE', $data);
+
+    $payload = ReceiptPayload::where('receipt_id', $result['receipt']->id)->first();
+    $desglose = $payload->payload['ResumenFactura']['TotalDesgloseImpuesto'];
+
+    expect($desglose)->toHaveCount(1);
+    expect($desglose[0]['Codigo'])->toBe('01');
+    expect($desglose[0]['TotalMontoImpuesto'])->toBe('0.00000');
+});
+
 it('retrieves document by id', function () {
     $receipt = Receipt::create([
         'receipt_type'               => ReceiptType::ElectronicInvoice,

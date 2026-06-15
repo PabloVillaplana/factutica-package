@@ -181,9 +181,15 @@ class ReceiptBuilderService
                     ];
                 }
 
+                $neto = bcsub(
+                    (string) ($impuesto['Monto'] ?? '0'),
+                    (string) ($impuesto['Exoneracion']['MontoExoneracion'] ?? '0'),
+                    5
+                );
+
                 $desglose[$key]['TotalMontoImpuesto'] = bcadd(
                     $desglose[$key]['TotalMontoImpuesto'],
-                    (string) ($impuesto['Monto'] ?? '0'),
+                    $neto,
                     5
                 );
             }
