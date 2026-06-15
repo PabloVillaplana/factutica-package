@@ -107,11 +107,11 @@ class DetalleServicioBuilder
                 $this->addDatosImpuestoEspecifico($imp, $d['DatosImpuestoEspecifico']);
             }
 
+            $this->el($imp, 'Monto', $d['Monto']);
+
             if (! empty($d['Exoneracion'])) {
                 $this->addExoneracion($imp, $d['Exoneracion']);
             }
-
-            $this->el($imp, 'Monto', $d['Monto']);
         }
     }
 

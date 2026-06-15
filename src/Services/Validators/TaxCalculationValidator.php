@@ -155,6 +155,20 @@ class TaxCalculationValidator
             );
         }
 
+        // Líneas con DetalleSurtido: la fórmula por línea no aplica, solo se
+        // exige que la exoneración no supere el monto del impuesto.
+        if (! empty($linea['DetalleSurtido'])) {
+            $monto = (float) ($imp['Monto'] ?? 0);
+
+            if ($montoExoneracion > $monto + self::TOLERANCE) {
+                throw new InvalidReceiptException(
+                    "Línea {$lineNum}, Impuesto {$taxNum}: MontoExoneracion ({$montoExoneracion}) no puede exceder el Monto del impuesto ({$monto}) en líneas con DetalleSurtido"
+                );
+            }
+
+            return;
+        }
+
         // MontoExoneracion = TarifaExonerada% × BaseImponible
         $base = $baseImponible > 0 ? $baseImponible : $subTotal;
         $expected = $base * ($tarifaExonerada / 100);

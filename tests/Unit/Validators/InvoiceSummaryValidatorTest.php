@@ -397,4 +397,81 @@ describe('InvoiceSummaryValidator', function () {
 
         expect(true)->toBeTrue();
     });
+
+    it('splits a partially exonerated line between gravado and exonerado', function () {
+        $validator = app(InvoiceSummaryValidator::class);
+
+        // IVA 13% = 1300, exonerated 12 points = 1200, ImpuestoNeto = 100.
+        // Ratio 1200/1300: exonerado = 10000 x ratio = 9230.77,
+        // gravado = 10000 x (1 - ratio) = 769.23
+        $data = summaryData([
+            'DetalleServicio' => [
+                'LineaDetalle' => [
+                    [
+                        'ImpuestoNeto'    => 100,
+                        'MontoTotalLinea' => 10100,
+                        'Impuesto'        => [
+                            [
+                                'ImpuestoNeto' => 100,
+                                'Exoneracion'  => [
+                                    'TarifaExonerada'  => 12,
+                                    'MontoExoneracion' => 1200,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'ResumenFactura' => [
+                'TotalServGravados'  => 769.23,
+                'TotalServExonerado' => 9230.77,
+                'TotalGravado'       => 769.23,
+                'TotalExonerado'     => 9230.77,
+                'TotalVenta'         => 10000,
+                'TotalVentaNeta'     => 10000,
+                'TotalImpuesto'      => 100,
+                'TotalComprobante'   => 10100,
+            ],
+        ]);
+
+        $validator->validate($data);
+
+        expect(true)->toBeTrue();
+    });
+
+    it('throws when a partially exonerated line is declared fully exonerated', function () {
+        $validator = app(InvoiceSummaryValidator::class);
+
+        $data = summaryData([
+            'DetalleServicio' => [
+                'LineaDetalle' => [
+                    [
+                        'ImpuestoNeto'    => 100,
+                        'MontoTotalLinea' => 10100,
+                        'Impuesto'        => [
+                            [
+                                'ImpuestoNeto' => 100,
+                                'Exoneracion'  => [
+                                    'TarifaExonerada'  => 12,
+                                    'MontoExoneracion' => 1200,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'ResumenFactura' => [
+                'TotalServGravados'  => 0,
+                'TotalServExonerado' => 10000,
+                'TotalGravado'       => 0,
+                'TotalExonerado'     => 10000,
+                'TotalVenta'         => 10000,
+                'TotalVentaNeta'     => 10000,
+                'TotalImpuesto'      => 100,
+                'TotalComprobante'   => 10100,
+            ],
+        ]);
+
+        $validator->validate($data);
+    })->throws(InvalidReceiptException::class, 'TotalServGravados');
 });

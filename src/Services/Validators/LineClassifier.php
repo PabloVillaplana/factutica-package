@@ -13,7 +13,9 @@ namespace FactuTica\FactuticaCR\Services\Validators;
  *   - Gravado:    02, 03, 04, 06, 07, 08, 09
  *   - Exento:     10
  *   - No Sujeto:  01, 11
- *   - Exonerado:  tiene Exoneracion en algún impuesto (precede sobre las demás)
+ *   - Exonerado:  tiene Exoneracion en algún impuesto. La exoneración puede ser
+ *     parcial (TarifaExonerada < Tarifa): la línea se reparte proporcionalmente
+ *     entre exonerado y gravado según MontoExoneracion / Monto del impuesto.
  */
 class LineClassifier
 {
@@ -78,20 +80,26 @@ class LineClassifier
         }
 
         $tarifaIVA = null;
-        $hasExoneracion = false;
+        $montoImpuesto = 0.0;
+        $montoExonerado = 0.0;
 
         foreach ($impuestos as $imp) {
             $codigo = $imp['Codigo'] ?? '';
             if (in_array($codigo, ['01', '07'])) {
                 $tarifaIVA = $imp['CodigoTarifaIVA'] ?? null;
+                $montoImpuesto += (float) ($imp['Monto'] ?? 0);
             }
-            if (! empty($imp['Exoneracion'])) {
-                $hasExoneracion = true;
-            }
+            $montoExonerado += (float) ($imp['Exoneracion']['MontoExoneracion'] ?? 0);
         }
 
-        if ($hasExoneracion) {
-            $result['exonerado'] = $montoTotal;
+        if ($montoExonerado > 0 && $montoImpuesto > 0) {
+            // Exoneración parcial: la porción exonerada es la fracción del
+            // impuesto que se exoneró (MontoExoneracion / Monto); el resto
+            // de la línea sigue siendo gravado.
+            $subTotal = (float) ($linea['SubTotal'] ?? $montoTotal);
+            $ratio = min(1.0, $montoExonerado / $montoImpuesto);
+            $result['exonerado'] = $subTotal * $ratio;
+            $result['gravado'] = $montoTotal * (1 - $ratio);
         } elseif ($tarifaIVA !== null && in_array($tarifaIVA, self::NO_SUJETO_TARIFAS)) {
             $result['no_sujeto'] = $montoTotal;
         } elseif ($tarifaIVA !== null && in_array($tarifaIVA, self::EXENTO_TARIFAS)) {

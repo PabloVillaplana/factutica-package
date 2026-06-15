@@ -256,6 +256,66 @@ it('throws when TarifaExonerada exceeds Tarifa for CodigoTarifaIVA 04', function
     app(TaxCalculationValidator::class)->validate($data);
 })->throws(InvalidReceiptException::class, 'TarifaExonerada');
 
+it('passes when MontoExoneracion is correct (partial exoneration)', function () {
+    // TarifaExonerada 12% x BaseImponible 10000 = 1200
+    $data = taxLineData([
+        'Codigo'          => '01',
+        'CodigoTarifaIVA' => '08',
+        'Tarifa'          => 13,
+        'Monto'           => 1300,
+        'Exoneracion'     => [
+            'TarifaExonerada'   => 12,
+            'MontoExoneracion'  => 1200,
+        ],
+    ], [
+        'BaseImponible' => 10000,
+    ]);
+
+    app(TaxCalculationValidator::class)->validate($data);
+
+    expect(true)->toBeTrue();
+});
+
+it('skips the exoneration formula for lines with DetalleSurtido', function () {
+    // 156 does not satisfy the per-line formula (12% x 10000 = 1200), but
+    // assortment lines only require MontoExoneracion <= tax Monto
+    $data = taxLineData([
+        'Codigo'          => '01',
+        'CodigoTarifaIVA' => '08',
+        'Tarifa'          => 13,
+        'Monto'           => 1300,
+        'Exoneracion'     => [
+            'TarifaExonerada'   => 12,
+            'MontoExoneracion'  => 156,
+        ],
+    ], [
+        'BaseImponible'  => 10000,
+        'DetalleSurtido' => [['CodigoCABYSSurtido' => '8399000000000']],
+    ]);
+
+    app(TaxCalculationValidator::class)->validate($data);
+
+    expect(true)->toBeTrue();
+});
+
+it('throws when MontoExoneracion exceeds tax Monto on a DetalleSurtido line', function () {
+    $data = taxLineData([
+        'Codigo'          => '01',
+        'CodigoTarifaIVA' => '08',
+        'Tarifa'          => 13,
+        'Monto'           => 1300,
+        'Exoneracion'     => [
+            'TarifaExonerada'   => 12,
+            'MontoExoneracion'  => 1500,
+        ],
+    ], [
+        'BaseImponible'  => 10000,
+        'DetalleSurtido' => [['CodigoCABYSSurtido' => '8399000000000']],
+    ]);
+
+    app(TaxCalculationValidator::class)->validate($data);
+})->throws(InvalidReceiptException::class, 'no puede exceder el Monto del impuesto');
+
 // ── DatosImpuestoEspecifico required for codes 04,05,06 ─────────────
 
 it('throws when DatosImpuestoEspecifico is missing for specific codes', function (string $codigo) {

@@ -179,7 +179,10 @@ class InvoiceSummaryValidator
     }
 
     /**
-     * TotalImpuesto = sum de ImpuestoNeto de todas las líneas.
+     * TotalImpuesto = suma por línea del impuesto efectivo:
+     *   - ImpuestoAsumidoEmisorFabrica cuando la línea lo declara (> 0)
+     *   - ImpuestoNeto cuando el impuesto tiene exoneración
+     *   - Monto del impuesto en el resto de los casos
      */
     private function validateTotalImpuesto(array $r, array $lineas): void
     {
@@ -187,7 +190,21 @@ class InvoiceSummaryValidator
         $calculated = 0;
 
         foreach ($lineas as $linea) {
-            $calculated += (float) ($linea['ImpuestoNeto'] ?? 0);
+            $asumido = (float) ($linea['ImpuestoAsumidoEmisorFabrica'] ?? 0);
+
+            if ($asumido > 0) {
+                $calculated += $asumido;
+
+                continue;
+            }
+
+            foreach ($linea['Impuesto'] ?? [] as $imp) {
+                if ((float) ($imp['Exoneracion']['MontoExoneracion'] ?? 0) > 0) {
+                    $calculated += (float) ($linea['ImpuestoNeto'] ?? 0);
+                } else {
+                    $calculated += (float) ($imp['Monto'] ?? 0);
+                }
+            }
         }
 
         if (! $this->approx($declared, $calculated)) {
