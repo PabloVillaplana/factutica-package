@@ -106,12 +106,16 @@ return [
     | Callback URL (Webhook de Hacienda)
     |--------------------------------------------------------------------------
     |
-    | URL relativa donde Hacienda enviará las respuestas asíncronas
-    | de los comprobantes. Se concatena con url() de la app.
+    | URL absoluta donde Hacienda enviará las respuestas asíncronas de los
+    | comprobantes. Se arma con APP_URL en vez del host del request actual,
+    | para que funcione igual accediendo por localhost o por túnel (ngrok).
     |
     */
 
-    'callback_url' => env('INVOICING_CR_CALLBACK_URL', 'api/invoicing-cr/webhook'),
+    'callback_url' => rtrim(env('APP_URL', ''), '/').'/'.ltrim(
+        env('INVOICING_CR_CALLBACK_URL', 'api/invoicing-cr/webhook'),
+        '/'
+    ),
 
     /*
     |--------------------------------------------------------------------------
