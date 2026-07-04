@@ -129,7 +129,7 @@ class ReceiptTypeRules
                 'Emisor.Ubicacion'              => ['nullable', 'array'],
                 'Emisor.CorreoElectronico'      => ['nullable', 'array', 'max:4'],
                 'Emisor.OtrasSenasExtranjero'   => ['required_if:Emisor.Identificacion.Tipo,05', 'nullable', 'string', 'min:5', 'max:300'],
-                'InformacionReferencia.*.TipoDocIR' => ['required_with:InformacionReferencia', 'string', 'in:01,02,03,04,05,06,07,08,09,10,11,12,14,15,16,17,18,99'],
+                'InformacionReferencia.*.TipoDocIR' => ['required_with:InformacionReferencia', 'string', 'in:01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,99'],
             ],
         ];
     }

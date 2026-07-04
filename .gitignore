@@ -3,3 +3,4 @@
 /.env
 *.p12
 /composer.lock
+/.phpunit.cache
