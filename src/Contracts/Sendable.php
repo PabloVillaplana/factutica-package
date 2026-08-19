@@ -11,7 +11,7 @@ use FactuTica\FactuticaCR\Enums\ReceiptType;
  */
 interface Sendable
 {
-    public function getKey(): string;
+    public function getUiKey(): ?string;
 
     public function getReceiptType(): ReceiptType;
 

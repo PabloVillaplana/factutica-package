@@ -30,6 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 243 tests, 508 assertions (Pest + Orchestra Testbench)
 - Coleccion Postman con 7 tipos de comprobantes y 30 tests de impuestos
 
+### Fixed
+- `HasSendableStatus::getKey()` sobrescribia el `Model::getKey()` real de Eloquent, rompiendo la serializacion de `SendSentReceiptToProviderJob::dispatchSync()` con `TypeError` cuando `ui_key` era null. Renombrado a `getUiKey(): ?string` en `Sendable`, `HasSendableStatus` y sus 4 call sites.
+
 ### Sandbox
 - FE (Factura Electronica) — aceptada
 - TE (Tiquete Electronico) — aceptado

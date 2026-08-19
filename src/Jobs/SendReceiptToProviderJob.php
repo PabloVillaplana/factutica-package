@@ -52,7 +52,7 @@ class SendReceiptToProviderJob implements ShouldBeUnique, ShouldQueue
         $response = $pipeline->generateSignAndSend($receipt, $receipt->receipt_type, $data);
 
         Log::info('SendReceiptToProviderJob: enviado', [
-            'id'           => $receipt->getKey(),
+            'id'           => $receipt->getUiKey(),
             'receipt_type' => $receipt->getReceiptType()->value,
             'ui_key'       => $response->clave,
         ]);

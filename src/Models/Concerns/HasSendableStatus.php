@@ -13,7 +13,7 @@ use FactuTica\FactuticaCR\Enums\ReceiptType;
  */
 trait HasSendableStatus
 {
-    public function getKey(): string
+    public function getUiKey(): ?string
     {
         return $this->ui_key;
     }

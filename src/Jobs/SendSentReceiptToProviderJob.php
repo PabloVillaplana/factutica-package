@@ -135,7 +135,7 @@ class SendSentReceiptToProviderJob implements ShouldBeUnique, ShouldQueue
         ]);
 
         Log::info('SendSentReceiptToProviderJob: enviado', [
-            'id'               => $sentReceipt->getKey(),
+            'id'               => $sentReceipt->getUiKey(),
             'receipt_type'     => $sentReceipt->getReceiptType()->value,
             'ui_key'           => $response->clave,
             'consecutive_key'  => $consecutiveKey,

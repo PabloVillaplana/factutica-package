@@ -39,7 +39,7 @@ class XmlPipelineService
         $response = $provider->send($receipt, $haciendaPayload);
 
         $receipt->markAsSent(
-            uiKey: (strlen($response->clave) === Constants::CLAVE_LENGTH) ? $response->clave : $receipt->getKey(),
+            uiKey: (strlen($response->clave) === Constants::CLAVE_LENGTH) ? $response->clave : $receipt->getUiKey(),
             signedXml: $signedXml,
         );
 

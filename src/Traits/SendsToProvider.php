@@ -22,7 +22,7 @@ trait SendsToProvider
         $sendable = $this->getSendable();
 
         Log::error("{$this->getJobName()}: falló", [
-            'id'           => $sendable->getKey(),
+            'id'           => $sendable->getUiKey(),
             'receipt_type' => $sendable->getReceiptType()->value,
             'error'        => $exception->getMessage(),
         ]);
