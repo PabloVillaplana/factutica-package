@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - `HasSendableStatus::getKey()` sobrescribia el `Model::getKey()` real de Eloquent, rompiendo la serializacion de `SendSentReceiptToProviderJob::dispatchSync()` con `TypeError` cuando `ui_key` era null. Renombrado a `getUiKey(): ?string` en `Sendable`, `HasSendableStatus` y sus 4 call sites.
+- El cast enum de `ReceiptConsecutive.receipt_type` lanzaba `ValueError` al leer los pseudo-tipos de mensaje de recepcion `MSG-05`/`MSG-06`/`MSG-07` (no existen en `ReceiptType`). Agregado `ReceiptOrMessageTypeCast` que devuelve la instancia real del enum para tipos genuinos o el string crudo para pseudo-tipos, sin lanzar nunca.
 
 ### Sandbox
 - FE (Factura Electronica) — aceptada

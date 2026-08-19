@@ -99,7 +99,7 @@ class SetConsecutiveCommand extends Command
         $this->table(
             ['Tipo', 'Sucursal', 'Terminal', 'Último número', 'Siguiente'],
             $records->map(fn ($r) => [
-                $r->receipt_type->value,
+                is_string($r->receipt_type) ? $r->receipt_type : $r->receipt_type->value,
                 $r->establishment,
                 $r->terminal,
                 $r->last_number,

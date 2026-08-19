@@ -3,7 +3,7 @@
 namespace FactuTica\FactuticaCR\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use FactuTica\FactuticaCR\Enums\ReceiptType;
+use FactuTica\FactuticaCR\Casts\ReceiptOrMessageTypeCast;
 
 class ReceiptConsecutive extends Model
 {
@@ -19,7 +19,7 @@ class ReceiptConsecutive extends Model
     protected function casts(): array
     {
         return [
-            'receipt_type' => ReceiptType::class,
+            'receipt_type' => ReceiptOrMessageTypeCast::class,
             'last_number' => 'integer',
         ];
     }
