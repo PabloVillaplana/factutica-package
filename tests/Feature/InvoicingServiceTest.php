@@ -153,6 +153,20 @@ it('stores payload with receipt', function () {
     expect($payload->payload['ResumenFactura']['TotalVenta'])->toBe('10000.00');
 });
 
+it('stores emission_date as the same instant as the XML FechaEmision', function () {
+    config(['app.timezone' => 'UTC']);
+    $this->travelTo(\Carbon\Carbon::parse('2026-09-29 15:02:00', 'UTC'));
+
+    $result = app(InvoicingService::class)->createAndSend('FE', validReceiptData());
+
+    $receipt = Receipt::find($result['receipt']->id);
+    $payload = ReceiptPayload::where('receipt_id', $receipt->id)->first();
+
+    expect($payload->payload['FechaEmision'])->toBe('2026-09-29T09:02:00-06:00');
+    expect($receipt->emission_date->copy()->utc()->format('Y-m-d H:i:s'))->toBe('2026-09-29 15:02:00');
+    expect($receipt->emission_date->copy()->setTimezone('America/Costa_Rica')->format('H:i'))->toBe('09:02');
+});
+
 it('auto-generates TotalDesgloseImpuesto net of exoneration', function () {
     $service = app(InvoicingService::class);
 

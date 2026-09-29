@@ -63,7 +63,10 @@ class ReceiptBuilderService
             'establishment'                => $establishment,
             'terminal'                     => $terminal,
             'consecutive_number'           => $consecutiveKey,
-            'emission_date'                => $emissionDate,
+            // Eloquent persists the wall-clock time without converting, so the
+            // Costa Rica time used for the clave/XML must be stored in the app
+            // timezone — otherwise it is read back 6 hours off.
+            'emission_date'                => $emissionDate->copy()->setTimezone(config('app.timezone')),
             'receipt_status'               => ReceiptStatus::Pending,
             'hacienda_status'              => HaciendaStatus::Pending,
             'sell_condition'               => $data['CondicionVenta'] ?? null,
